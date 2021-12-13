@@ -18,7 +18,7 @@ install.CC=$(CC)
 CFLAGS=-Wall -O2 -DHAS_INTEGRAL_OFF_T \
                  -D_POSIX_C_SOURCE \
                  -D_LARGEFILE_SOURCE \
-                 -D_FILE_OFFSET_BITS=64
+                 -D_FILE_OFFSET_BITS=64 -fPIC
 CXXFLAGS= $(CFLAGS) -I.
 #
 # To build applications on top of the AFF library, one needs to pass
@@ -40,7 +40,7 @@ AR=ar
 RANLIB=ranlib
 #
 # Where to install
-prefix=$$HOME/lhpc
+prefix=/space4/kanwar/aff/build
 #
 # By default, binaries go into $(prefix)/bin. If you want to select
 # another distination, set prefix_bin.

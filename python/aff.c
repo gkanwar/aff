@@ -24,22 +24,22 @@ paff_reader_dealloc(paff_Reader *self)
         aff_reader_close(self->reader);
         self->reader = NULL;
     }
-    self->ob_type->tp_free((PyObject *)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject *
 paff_reader_str(paff_Reader *self)
 {
     if (self->name == NULL) {
-        return PyString_FromFormat("<aff Reader without a name at %p>",
+        return PyUnicode_FromFormat("<aff Reader without a name at %p>",
                                    self);
     } else if (self->reader == NULL) {
-        return PyString_FromFormat("<closed aff Reader('%s') at %p>",
-                                   PyString_AsString(self->name),
+        return PyUnicode_FromFormat("<closed aff Reader('%s') at %p>",
+                                    PyBytes_AsString(self->name),
                                    self);
     } else {
-        return PyString_FromFormat("<aff Reader('%s') at %p>",
-                                   PyString_AsString(self->name),
+        return PyUnicode_FromFormat("<aff Reader('%s') at %p>",
+                                    PyBytes_AsString(self->name),
                                    self);
     }
 }
@@ -57,7 +57,7 @@ paff_reader_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             goto error;
 
         Py_INCREF(self->name);
-        self->reader = aff_reader(PyString_AsString(self->name));
+        self->reader = aff_reader(PyBytes_AsString(self->name));
         msg = aff_reader_errstr(self->reader);
         if (msg) {
             PyErr_SetString(paff_exception, msg);
@@ -119,7 +119,7 @@ paff_reader_newdir(paff_Reader *r, PyObject *args)
         PyErr_SetString(paff_exception, "closed reader");
         return NULL;
     }
-    if (! PyArg_ParseTuple(args, "s", &path))
+    if (! PyArg_ParseTuple(args, "y", &path))
         return NULL;
 
     new_dir = aff_reader_chpath(r->reader, r->dir, path);
@@ -157,8 +157,8 @@ paff_to_python_type(struct AffNode_s *dir)
     t = aff_node_type(dir);
     switch (t) {
     case affNodeVoid:     result = (PyObject *)&PyList_Type;    break;
-    case affNodeChar:     result = (PyObject *)&PyString_Type;  break;
-    case affNodeInt:      result = (PyObject *)&PyInt_Type;     break;
+    case affNodeChar:     result = (PyObject *)&PyBytes_Type;  break;
+    case affNodeInt:      result = (PyObject *)&PyLong_Type;     break;
     case affNodeDouble:   result = (PyObject *)&PyFloat_Type;   break;
     case affNodeComplex:  result = (PyObject *)&PyComplex_Type; break;
     default:
@@ -187,7 +187,7 @@ paff_reader_size(PyObject *self, PyObject *args)
     if (new_dir == 0)
         return NULL;
 
-    return PyInt_FromLong(aff_node_size(new_dir));
+    return PyLong_FromLong(aff_node_size(new_dir));
 }
 
 static void
@@ -200,7 +200,7 @@ paff_getent(struct AffNode_s *node, void *arg)
         return;
 
     sym = aff_node_name(node);
-    if (PyList_Append(*result, PyString_FromString(aff_symbol_name(sym)))) {
+    if (PyList_Append(*result, PyBytes_FromString(aff_symbol_name(sym)))) {
         Py_DECREF(*result);
         *result = NULL;
     }
@@ -243,7 +243,7 @@ paff_read_char(paff_Reader *r, int size, struct AffNode_s *node)
         result = NULL;
     } else {
         buffer[size] = 0;
-        result = PyString_FromStringAndSize(buffer, size);
+        result = PyBytes_FromStringAndSize(buffer, size);
     }
     free(buffer);
     return result;
@@ -270,7 +270,7 @@ paff_read_int(paff_Reader *r, int size, struct AffNode_s *node)
             goto end;
         }
         for (i = 0; i < size; i++) {
-            PyObject *elem = PyInt_FromLong(buffer[i]);
+            PyObject *elem = PyLong_FromLong(buffer[i]);
             if (elem == NULL) {
                 PyErr_NoMemory();
                 Py_CLEAR(result);
@@ -388,16 +388,16 @@ paff_node_to_path(struct AffNode_s *dir)
     PyObject *result;
 
     if (parent == dir)
-        return PyString_FromString("/");
+        return PyBytes_FromString("/");
 
-    result = PyString_FromFormat("%s", aff_symbol_name(symbol));
+    result = PyBytes_FromFormat("%s", aff_symbol_name(symbol));
     if (result == 0)
         return NULL;
     for (; parent != dir; dir = parent, parent = aff_node_parent(parent)) {
         symbol = aff_node_name(parent);
-        PyObject *p = PyString_FromFormat("%s/%s",
+        PyObject *p = PyBytes_FromFormat("%s/%s",
                                           aff_symbol_name(symbol),
-                                          PyString_AsString(result));
+                                          PyBytes_AsString(result));
         Py_DECREF(result);
         if (p == 0)
             return NULL;
@@ -432,7 +432,7 @@ static PyMethodDef paff_reader_methods[] = {
 };
 
 static PyTypeObject paff_ReaderType = {
-    PyObject_HEAD_INIT(NULL)
+  PyVarObject_HEAD_INIT(NULL, 0)
 };
 
 /* writer */
@@ -451,22 +451,22 @@ paff_writer_dealloc(paff_Writer *self)
         aff_writer_close(self->writer);
         self->writer = NULL;
     }
-    self->ob_type->tp_free((PyObject *)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject *
 paff_writer_str(paff_Writer *self)
 {
     if (self->name == NULL) {
-        return PyString_FromFormat("<aff Writer without a name at %p>",
+        return PyUnicode_FromFormat("<aff Writer without a name at %p>",
                                    self);
     } else if (self->writer == NULL) {
-        return PyString_FromFormat("<closed aff Writer('%s') at %p>",
-                                   PyString_AsString(self->name),
+        return PyUnicode_FromFormat("<closed aff Writer('%s') at %p>",
+                                    PyBytes_AsString(self->name),
                                    self);
     } else {
-        return PyString_FromFormat("<aff Writer('%s') at %p>",
-                                   PyString_AsString(self->name),
+        return PyUnicode_FromFormat("<aff Writer('%s') at %p>",
+                                    PyBytes_AsString(self->name),
                                    self);
     }
 }
@@ -484,7 +484,7 @@ paff_writer_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             goto error;
 
         Py_INCREF(self->name);
-        self->writer = aff_writer(PyString_AsString(self->name));
+        self->writer = aff_writer(PyBytes_AsString(self->name));
         msg = aff_writer_errstr(self->writer);
         if (msg) {
             PyErr_SetString(paff_exception, msg);
@@ -546,10 +546,10 @@ paff_writer_newdir(paff_Writer *w, PyObject *args, PyObject **extra)
         return NULL;
     }
     if (extra == NULL) {
-        if (!PyArg_ParseTuple(args, "s", &path))
+        if (!PyArg_ParseTuple(args, "y", &path))
             return NULL;
     } else {
-        if (!PyArg_ParseTuple(args, "sO", &path, extra))
+        if (!PyArg_ParseTuple(args, "yO", &path, extra))
             return NULL;
     }
     
@@ -591,7 +591,7 @@ paff_writer_size(PyObject *self, PyObject *args)
     if (new_dir == 0)
         return NULL;
 
-    return PyInt_FromLong(aff_node_size(new_dir));
+    return PyLong_FromLong(aff_node_size(new_dir));
 }
 
 static PyObject *
@@ -620,7 +620,7 @@ static PyObject *
 paff_write_char(paff_Writer *w, struct AffNode_s *dir,
                 int size, PyObject *data)
 {
-    const char *str = PyString_AS_STRING(data);
+    const char *str = PyBytes_AS_STRING(data);
 
     if (aff_node_put_char(w->writer, dir, str, size)) {
         PyErr_SetString(paff_exception, aff_writer_errstr(w->writer));
@@ -643,9 +643,9 @@ paff_write_int(paff_Writer *w, struct AffNode_s *dir,
     for (i = 0; i < size; i++) {
         PyObject *elem = PyList_GET_ITEM(data, i);
 
-        if (elem->ob_type != &PyInt_Type)
+        if (Py_TYPE(elem) != &PyLong_Type)
             goto bad_data_error;
-        buffer[i] = PyInt_AsLong(elem);
+        buffer[i] = PyLong_AsLong(elem);
     }
     if (aff_node_put_int(w->writer, dir, buffer, size)) {
         PyErr_SetString(paff_exception, aff_writer_errstr(w->writer));
@@ -675,7 +675,7 @@ paff_write_double(paff_Writer *w, struct AffNode_s *dir,
     for (i = 0; i < size; i++) {
         PyObject *elem = PyList_GET_ITEM(data, i);
 
-        if (elem->ob_type != &PyFloat_Type)
+        if (Py_TYPE(elem) != &PyFloat_Type)
             goto bad_data_error;
         buffer[i] = PyFloat_AsDouble(elem);
     }
@@ -707,7 +707,7 @@ paff_write_complex(paff_Writer *w, struct AffNode_s *dir,
     for (i = 0; i < size; i++) {
         PyObject *elem = PyList_GET_ITEM(data, i);
 
-        if (elem->ob_type != &PyComplex_Type)
+        if (Py_TYPE(elem) != &PyComplex_Type)
             goto bad_data_error;
         buffer[i] = PyComplex_RealAsDouble(elem)
                      + I * PyComplex_ImagAsDouble(elem);
@@ -740,21 +740,21 @@ paff_writer_write(PyObject *self, PyObject *args)
         return NULL;
 
     size = PyList_GET_SIZE(data);
-    if (data->ob_type == &PyString_Type)
+    if (Py_TYPE(data) == &PyBytes_Type)
         return paff_write_char(w, new_dir, size, data);
 
-    if (data->ob_type != &PyList_Type) {
+    if (Py_TYPE(data) != &PyList_Type) {
         PyErr_SetString(paff_exception, "data is not a list");
         return NULL;
     }
     if (size == 0)
         return paff_write_void(new_dir);
     elem = PyList_GET_ITEM(data, 0);
-    if (elem->ob_type == &PyInt_Type)
+    if (Py_TYPE(elem) == &PyLong_Type)
         return paff_write_int(w, new_dir, size, data);
-    if (elem->ob_type == &PyFloat_Type)
+    if (Py_TYPE(elem) == &PyFloat_Type)
         return paff_write_double(w, new_dir, size, data);
-    if (elem->ob_type == &PyComplex_Type)
+    if (Py_TYPE(elem) == &PyComplex_Type)
         return paff_write_complex(w, new_dir, size, data);
 
     PyErr_SetString(paff_exception, "Unsupported data type");
@@ -774,7 +774,7 @@ static PyMethodDef paff_writer_methods[] = {
 };
 
 static PyTypeObject paff_WriterType = {
-    PyObject_HEAD_INIT(NULL)
+  PyVarObject_HEAD_INIT(NULL, 0)
 };
 /* module */
 
@@ -797,18 +797,31 @@ static PyMethodDef paff_methods[] = {
     { NULL, NULL, 0, NULL }
 };
 
+static struct PyModuleDef moduledef = {
+  PyModuleDef_HEAD_INIT,
+  "aff",
+  "AFF interface.",
+  -1,
+  paff_methods,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+};
+
 #ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
 #define PyMODINIT_FUNC void
 #endif
 PyMODINIT_FUNC
-initaff(void) 
+PyInit_aff(void) 
 {
     static char *exception_name = "aff.Exception";
     PyObject* m;
 
-    m = Py_InitModule3("aff", paff_methods, "AFF interface.");
+    /* m = Py_InitModule3("aff", paff_methods, "AFF interface."); */
+    m = PyModule_Create(&moduledef);
     if (m == NULL)
-        return;
+        return NULL;
 
     paff_ReaderType.tp_name = "aff.Reader";
     paff_ReaderType.tp_basicsize = sizeof (paff_Reader);
@@ -820,13 +833,13 @@ initaff(void)
     paff_ReaderType.tp_methods = paff_reader_methods;
     paff_ReaderType.tp_new = paff_reader_new;
     if (PyType_Ready(&paff_ReaderType) < 0)
-        return;
+        return NULL;
 
     Py_INCREF(&paff_ReaderType);
     if (PyModule_AddObject(m,
                            paff_ReaderType.tp_name + 4,
                            (PyObject *)&paff_ReaderType))
-        return;
+        return NULL;
 
     paff_WriterType.tp_name = "aff.Writer";
     paff_WriterType.tp_basicsize = sizeof (paff_Writer);
@@ -838,23 +851,23 @@ initaff(void)
     paff_WriterType.tp_methods = paff_writer_methods;
     paff_WriterType.tp_new = paff_writer_new;
     if (PyType_Ready(&paff_WriterType) < 0)
-        return;
+        return NULL;
 
     Py_INCREF(&paff_WriterType);
     if (PyModule_AddObject(m,
                            paff_WriterType.tp_name + 4,
                            (PyObject *)&paff_WriterType))
-        return;
+        return NULL;
 
     paff_exception = PyErr_NewException(exception_name, NULL, NULL);
     if (paff_exception == NULL)
-        return;
+        return NULL;
 
     Py_INCREF(paff_exception);
     if (PyModule_AddObject(m,
                            exception_name + 4,
                            (PyObject *)paff_exception))
-        return;
+        return NULL;
 
-    return;
+    return m;
 }
